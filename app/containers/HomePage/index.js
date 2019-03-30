@@ -10,16 +10,157 @@
  */
 
 import React from 'react';
-import { FormattedMessage } from 'react-intl';
-import messages from './messages';
-
+import { Row, Col, Button, Input, Table, Pagination, Icon } from 'antd';
+import styled from 'styled-components';
+import campaigns from './campaigns';
+const Wrapper = styled.div`
+  width: 1140px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  /* bring your own prefixes */
+  transform: translate(-50%, -50%);
+`;
 /* eslint-disable react/prefer-stateless-function */
+const columns = [
+  {
+    title: 'Name',
+    dataIndex: 'name',
+  },
+  {
+    title: 'Type',
+    dataIndex: 'type',
+  },
+  {
+    title: 'Company',
+    dataIndex: 'company',
+  },
+  {
+    title: 'Actions',
+    dataIndex: 'address',
+  },
+];
+
 export default class HomePage extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedCampaigns: [],
+      campaignsList: this.getCampaignsList(),
+    };
+  }
+
+  getCampaignsList = () =>
+    campaigns.slice().map(campaign => ({ ...campaign, key: campaign._id }));
+
+  getColumns = () => {
+    columns[3].render = (text, record) => (
+      <Icon
+        type="delete"
+        onClick={() => {
+          this.deleteCampaigns([record._id]);
+        }}
+      />
+    );
+    return columns;
+  };
+
+  deleteSelected = () => {
+    this.deleteCampaigns(this.state.selectedCampaigns, () =>
+      this.setState({ selectedCampaigns: [] }),
+    );
+  };
+
+  deleteCampaigns = (campaigns, callback) => {
+    this.setState(
+      prevState => {
+        let { campaignsList, selectedCampaigns } = prevState;
+        campaignsList = campaignsList.filter(
+          campaign => campaigns.indexOf(campaign._id) === -1,
+        );
+        selectedCampaigns = [];
+        return { campaignsList, selectedCampaigns };
+      },
+      () => callback && callback(),
+    );
+  };
+
+  setSelectedCampaigns = selectedCampaignsDetails => {
+    const selectedCampaigns = selectedCampaignsDetails.map(
+      campaign => campaign._id,
+    );
+    this.setState({ selectedCampaigns });
+  };
+
+  filterCampaings = ev => {
+    const { value } = ev.target;
+    this.setState(prevState => {
+      const { campaignsList } = prevState;
+      let newCampaignsList = campaignsList.slice();
+      if (value.trim() !== '') {
+        newCampaignsList = campaignsList.filter(
+          campaign =>
+            campaign.name.toLowerCase().indexOf(value.toLowerCase()) > -1,
+        );
+      } else {
+        newCampaignsList = this.getCampaignsList();
+      }
+
+      return { campaignsList: newCampaignsList };
+    });
+  };
+
   render() {
+    const { campaignsList, selectedCampaigns } = this.state;
+    const rowSelection = {
+      getCheckboxProps: record => ({
+        disabled: record.name === 'Disabled User', // Column configuration not to be checked
+        name: record.name,
+      }),
+      onSelect: (record, selected, selectedRows, nativeEvent) => {
+        this.setSelectedCampaigns(selectedRows);
+      },
+      onSelectInvert: selectedRows => {
+        this.setSelectedCampaigns(selectedRows);
+
+        if (selectedRows.length === 0) {
+          this.hideMultiSelectionActions();
+        }
+      },
+      onSelectAll: (selected, selectedRows) => {
+        this.setSelectedCampaigns(selectedRows);
+      },
+    };
     return (
-      <h1>
-        <FormattedMessage {...messages.header} />
-      </h1>
+      <Wrapper>
+        <Row>
+          <Row>
+            <Col>
+              <Input
+                onChange={this.filterCampaings}
+                placeholder="Search with name"
+              />
+            </Col>
+          </Row>
+          <Row>
+            {selectedCampaigns.length ? (
+              <Button onClick={this.deleteSelected}>
+                Delete selcted campaigns
+              </Button>
+            ) : (
+              ''
+            )}
+          </Row>
+          <Row>
+            <Table
+              columns={this.getColumns()}
+              dataSource={campaignsList}
+              rowSelection={rowSelection}
+              pagination={<Pagination defaultPageSize={10} />}
+            />
+          </Row>
+        </Row>
+      </Wrapper>
     );
   }
 }
