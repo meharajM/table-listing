@@ -15,11 +15,11 @@ import styled from 'styled-components';
 import campaigns from './campaigns';
 const Wrapper = styled.div`
   width: 1140px;
-  position: fixed;
-  top: 50%;
-  left: 50%;
+  position: absolute;
+  top: 10%;
+  left: 10%;
+
   /* bring your own prefixes */
-  transform: translate(-50%, -50%);
 `;
 /* eslint-disable react/prefer-stateless-function */
 const columns = [
