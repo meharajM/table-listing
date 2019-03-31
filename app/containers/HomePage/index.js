@@ -44,14 +44,50 @@ const columns = [
 export default class HomePage extends React.PureComponent {
   constructor(props) {
     super(props);
+    const pageLimit = 10;
     this.state = {
       selectedCampaigns: [],
       campaignsList: this.getCampaignsList(),
+      page: 1,
+      pageLimit,
     };
+    this.currentRecordIndex = pageLimit;
   }
 
-  getCampaignsList = () =>
-    campaigns.slice().map(campaign => ({ ...campaign, key: campaign._id }));
+  getCampaignsList = pagination => {
+    const campaignsList = campaigns
+      .slice()
+      .map(campaign => ({ ...campaign, key: campaign._id }));
+    if (pagination) {
+      const { page } = pagination;
+      const { pageLimit } = this.state;
+      if (page === 1) {
+        return campaignsList.slice(0, pageLimit);
+      }
+      const { currentRecordIndex } = this;
+      const newRecordIndex = page * pageLimit;
+      this.currentRecordIndex = newRecordIndex;
+
+      if (newRecordIndex > currentRecordIndex) {
+        return campaignsList.slice(currentRecordIndex + 1, newRecordIndex + 1);
+      }
+      if (newRecordIndex < currentRecordIndex) {
+        return campaignsList.slice(currentRecordIndex + 1, newRecordIndex + 1);
+      }
+    }
+    return campaignsList;
+  };
+
+  paginateData = mode => {
+    this.setState(prevState => {
+      const page = mode === 'next' ? prevState.page + 1 : this.state.page - 1;
+      const campaignsList = this.getCampaignsList({ page });
+      return {
+        campaignsList,
+        page,
+      };
+    });
+  };
 
   getColumns = () => {
     columns[3].render = (text, record) => (
@@ -160,6 +196,13 @@ export default class HomePage extends React.PureComponent {
             />
           </Row>
         </Row>
+        {this.state.page > 1 && (
+          <Button onClick={() => this.paginateData('prev')}> Prev</Button>
+        )}
+
+        {this.state.page < 10 && (
+          <Button onClick={() => this.paginateData('next')}> Next</Button>
+        )}
       </Wrapper>
     );
   }
